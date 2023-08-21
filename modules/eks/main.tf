@@ -149,6 +149,72 @@ resource "aws_iam_role_policy_attachment" "node_group_role_CloudWatchAgentServer
   role       = aws_iam_role.node_group_role.id
 }
 
+resource "aws_iam_role" "eks_fargate_profile_role" {
+  name = "eks-fargate-profile-role"
+  assume_role_policy = jsonencode({
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "eks-fargate-pods.amazonaws.com"
+      }
+    }]
+    Version = "2012-10-17"
+  })
+
+  tags = merge({}, var.tags)
+}
+
+resource "aws_iam_role_policy_attachment" "eks_fargate_profile_role_AmazonEKSFargatePodExecutionRolePolicy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy"
+  role       = aws_iam_role.eks_fargate_profile_role.name
+}
+
+resource "aws_eks_fargate_profile" "kube_system" {
+  cluster_name           = aws_eks_cluster.eks.name
+  fargate_profile_name   = "${var.name}-kube-system"
+  pod_execution_role_arn = aws_iam_role.eks_fargate_profile_role.arn
+
+  # These subnets must have the following resource tag: 
+  # kubernetes.io/cluster/<CLUSTER_NAME>.
+  subnet_ids = flatten([var.private_subnet_ids])
+
+  selector {
+    namespace = "kube-system"
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.eks_fargate_profile_role_AmazonEKSFargatePodExecutionRolePolicy
+  ]
+
+  tags = merge({
+    "eks/cluster-name"   = aws_eks_cluster.eks.name
+  }, var.tags)
+}
+
+resource "aws_eks_fargate_profile" "default" {
+  cluster_name           = aws_eks_cluster.eks.name
+  fargate_profile_name   = "${var.name}-default"
+  pod_execution_role_arn = aws_iam_role.eks_fargate_profile_role.arn
+
+  # These subnets must have the following resource tag: 
+  # kubernetes.io/cluster/<CLUSTER_NAME>.
+  subnet_ids = flatten([var.private_subnet_ids])
+
+  selector {
+    namespace = "default"
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.eks_fargate_profile_role_AmazonEKSFargatePodExecutionRolePolicy
+  ]
+
+  tags = merge({
+    "eks/cluster-name"   = aws_eks_cluster.eks.name
+  }, var.tags)
+}
+
+/*
 resource "aws_eks_node_group" "node_group" {
   cluster_name  = aws_eks_cluster.eks.name
   instance_types = ["t3.small"]
@@ -188,3 +254,4 @@ resource "aws_eks_node_group" "node_group" {
     "eks/nodegroup-type" = "managed"
   }, var.tags)
 }
+*/
