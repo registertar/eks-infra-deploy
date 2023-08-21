@@ -60,6 +60,8 @@ resource "aws_cloudwatch_log_group" "eks_logs" {
   # Reference: https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html
   name              = "/aws/eks/${var.name}/cluster"
   retention_in_days = 7
+
+  tags = merge({}, var.tags)
 }
 
 # EKS Cluster
@@ -149,6 +151,7 @@ resource "aws_iam_role_policy_attachment" "node_group_role_CloudWatchAgentServer
 
 resource "aws_eks_node_group" "node_group" {
   cluster_name  = aws_eks_cluster.eks.name
+  instance_types = ["t3.small"]
   disk_size     = 20
   capacity_type = "SPOT"
   labels        = {
@@ -166,10 +169,6 @@ resource "aws_eks_node_group" "node_group" {
     desired_size = var.desired_size
   }
 
-  lifecycle {
-    create_before_destroy = true
-  }
-
   depends_on = [
     aws_iam_role_policy_attachment.node_group_role_AmazonEC2ContainerRegistryReadOnly,
     aws_iam_role_policy_attachment.node_group_role_AmazonEC2RoleforSSM,
@@ -177,6 +176,10 @@ resource "aws_eks_node_group" "node_group" {
     aws_iam_role_policy_attachment.node_group_role_AmazonEKSWorkerNodePolicy,
     aws_iam_role_policy_attachment.node_group_role_CloudWatchAgentServerPolicy
   ]
+
+  lifecycle {
+    ignore_changes = [scaling_config[0].desired_size]
+  }
 
   tags = merge({
     Name                 = aws_eks_cluster.eks.name
