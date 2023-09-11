@@ -34,7 +34,7 @@ resource "aws_nat_gateway" "nat_gateway" {
   }, var.tags)
 }
 
-# Public subnet
+# Public Subnets
 resource "aws_subnet" "public_subnet" {
   vpc_id                  = aws_vpc.vpc.id
   count                   = length(var.public_subnets_cidr_block)
@@ -43,10 +43,12 @@ resource "aws_subnet" "public_subnet" {
   map_public_ip_on_launch = true
   tags                    = merge( {
     Name = "${var.name} Public Subnet ${element(var.availability_zones, count.index)}"
+    "kubernetes.io/role/elb" = 1
+    "kubernetes.io/cluster/${var.eks_name}" = "shared"
   }, var.tags)
 }
 
-# Private Subnet
+# Private Subnets
 resource "aws_subnet" "private_subnet" {
   vpc_id                  = aws_vpc.vpc.id
   count                   = length(var.private_subnets_cidr_block)
@@ -55,6 +57,8 @@ resource "aws_subnet" "private_subnet" {
   map_public_ip_on_launch = false
   tags                    = merge({
     Name = "${var.name} Private Subnet ${element(var.availability_zones, count.index)}"
+    "kubernetes.io/role/internal-elb" = 1
+    "kubernetes.io/cluster/${var.eks_name}" = "shared"
   }, var.tags)
 }
 

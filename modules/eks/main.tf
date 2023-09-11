@@ -99,6 +99,13 @@ resource "aws_eks_cluster" "eks" {
   ]
 
   tags = merge({}, var.tags)
+
+  lifecycle {
+    ignore_changes = [
+      # Ignore changes to tags, because eksctl updates those
+      tags, tags_all
+    ]
+  }
 }
 
 resource "aws_iam_role" "node_group_role" {

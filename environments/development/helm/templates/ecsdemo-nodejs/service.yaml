@@ -5,6 +5,7 @@ metadata:
 spec:
   selector:
     app: ecsdemo-nodejs
+  type: ClusterIP
   ports:
    -  protocol: TCP
       port: 80

@@ -28,3 +28,8 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "eks_name" {
+  type        = string
+  description = "Name of eks cluster for proper tagging for LB Controller"
+}

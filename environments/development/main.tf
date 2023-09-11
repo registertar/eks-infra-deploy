@@ -2,7 +2,12 @@ locals {
   tags = {
     Repo = "eks-infra-deploy"
   }
+  eks_name = "my-eks"
 }
+
+data "aws_caller_identity" "current" {}
+
+data "aws_region" "current" {}
 
 resource "aws_kms_key" "master_cmk" {
   description             = "Master KMS key"
@@ -23,11 +28,12 @@ module "Networking" {
   public_subnets_cidr_block  = ["10.0.32.0/24", "10.0.96.0/24", "10.0.224.0/24"]
   private_subnets_cidr_block = ["10.0.0.0/19", "10.0.64.0/19", "10.0.128.0/19"]
   tags                       = local.tags
+  eks_name                   = local.eks_name
 }
 
 module "EKS" {
   source             = "../../modules/eks"
-  name               = "my-eks"
+  name               = local.eks_name
   k8s_version        = "1.27"
   vpc_id             = module.Networking.vpc_id
   public_subnet_ids  = module.Networking.public_subnet_ids
