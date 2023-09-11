@@ -1,0 +1,19 @@
+# Default values for eksdemo.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Release-wide Values
+replicas: 3
+
+# Service Specific Values
+nodejs:
+  image: brentley/ecsdemo-nodejs
+  version: latest
+
+crystal:
+  image: brentley/ecsdemo-crystal
+  version: latest
+
+frontend:
+  image: brentley/ecsdemo-frontend
+  version: latest
