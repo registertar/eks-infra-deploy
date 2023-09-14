@@ -262,3 +262,82 @@ resource "aws_eks_node_group" "node_group" {
   }, var.tags)
 }
 */
+
+data "aws_caller_identity" "current" {}
+
+data "aws_region" "current" {}
+
+locals {
+  is_linux = length(regexall("/home/", lower(abspath(path.root)))) > 0
+}
+
+resource "terraform_data" "eks_provisioner_linux" {
+  count = local.is_linux ? 1 : 0
+
+  provisioner "local-exec" {
+    command = "scripts/linux/01-update-kubeconfig.sh"
+    working_dir = path.module
+    environment = {
+      EKS_CLUSTER_NAME = aws_eks_cluster.eks.name
+    }
+  }
+
+  provisioner "local-exec" {
+    command = "scripts/linux/02-patch-coredns-deployment.sh"
+    working_dir = path.module
+  }
+
+  provisioner "local-exec" {
+    command = "scripts/linux/03-lb-controller.sh"
+    working_dir = path.module
+    environment = {
+      EKS_CLUSTER_NAME = aws_eks_cluster.eks.name
+      ACCOUNT_ID = data.aws_caller_identity.current.account_id
+      AWS_REGION = data.aws_region.current.name
+      VPC_ID = var.vpc_id
+    }
+  }
+
+  depends_on = [
+    aws_eks_cluster.eks,
+    aws_eks_fargate_profile.kube_system,
+    aws_eks_fargate_profile.default
+  ]
+}
+
+resource "terraform_data" "eks_provisioner_windows" {
+  count = local.is_linux ? 0 : 1
+
+  provisioner "local-exec" {
+    command = "scripts\\windows\\01-update-kubeconfig.ps1"
+    working_dir = path.module
+    interpreter = ["PowerShell", "-Command"]
+    environment = {
+      EKS_CLUSTER_NAME = aws_eks_cluster.eks.name
+    }
+  }
+
+  provisioner "local-exec" {
+    command = "scripts\\windows\\02-patch-coredns-deployment.ps1"
+    working_dir = path.module
+    interpreter = ["PowerShell", "-Command"]
+  }
+
+  provisioner "local-exec" {
+    command = "scripts\\windows\\03-lb-controller.ps1"
+    working_dir = path.module
+    interpreter = ["PowerShell", "-Command"]
+    environment = {
+      EKS_CLUSTER_NAME = aws_eks_cluster.eks.name
+      ACCOUNT_ID = data.aws_caller_identity.current.account_id
+      AWS_REGION = data.aws_region.current.name
+      VPC_ID = var.vpc_id
+    }
+  }
+
+  depends_on = [
+    aws_eks_cluster.eks,
+    aws_eks_fargate_profile.kube_system,
+    aws_eks_fargate_profile.default
+  ]
+}

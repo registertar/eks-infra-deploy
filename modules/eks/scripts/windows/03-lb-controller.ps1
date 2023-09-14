@@ -3,17 +3,17 @@
 
 $LBC_VERSION = "v2.5.4"
 
-$EKS_CLUSTER_NAME = $(terraform output -raw eks_cluster_name)
-$ACCOUNT_ID = $(terraform output -raw account_id)
-$AWS_REGION = $(terraform output -raw aws_region)
-$VPC_ID = $(terraform output -raw vpc_id)
+$EKS_CLUSTER_NAME = $env:EKS_CLUSTER_NAME
+$ACCOUNT_ID = $env:ACCOUNT_ID
+$AWS_REGION = $env:AWS_REGION
+$VPC_ID = $env:VPC_ID
 
 eksctl utils associate-iam-oidc-provider --cluster ${EKS_CLUSTER_NAME} --approve
 
 
-Invoke-WebRequest -Uri https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/${LBC_VERSION}/docs/install/iam_policy.json -OutFile iam_policy.json.tmp
-aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-document file://iam_policy.json.tmp
-Remove-Item iam_policy.json.tmp
+Invoke-WebRequest -Uri https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/${LBC_VERSION}/docs/install/iam_policy.json -OutFile iam_policy.json
+aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-document file://iam_policy.json
+Remove-Item iam_policy.json
 
 
 eksctl create iamserviceaccount `
@@ -41,7 +41,7 @@ helm upgrade -i aws-load-balancer-controller `
     --set serviceAccount.name=aws-load-balancer-controller `
     --set image.tag="${LBC_VERSION}" `
     --set region=${AWS_REGION} `
-    --set vpcId=${VPC_ID}
+    --set vpcId=${VPC_ID} `
+    --wait
 
 kubectl -n kube-system rollout status deployment aws-load-balancer-controller
-
