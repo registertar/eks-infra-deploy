@@ -20,7 +20,7 @@ resource "aws_kms_alias" "master_cmk" {
   target_key_id = aws_kms_key.master_cmk.key_id
 }
 
-module "Networking" {
+module "networking" {
   source                     = "../../modules/networking"
   name                       = "my-vpc-for-eks"
   availability_zones         = ["eu-west-1a", "eu-west-1b", "eu-west-1c"]
@@ -31,13 +31,13 @@ module "Networking" {
   eks_name                   = local.eks_name
 }
 
-module "EKS" {
+module "eks" {
   source             = "../../modules/eks"
   name               = local.eks_name
   k8s_version        = "1.27"
-  vpc_id             = module.Networking.vpc_id
-  public_subnet_ids  = module.Networking.public_subnet_ids
-  private_subnet_ids = module.Networking.private_subnet_ids
+  vpc_id             = module.networking.vpc_id
+  public_subnet_ids  = module.networking.public_subnet_ids
+  private_subnet_ids = module.networking.private_subnet_ids
   min_size           = 2
   max_size           = 4
   desired_size       = 2
