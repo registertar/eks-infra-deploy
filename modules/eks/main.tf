@@ -271,12 +271,13 @@ locals {
   is_linux = length(regexall("/home/", lower(abspath(path.root)))) > 0
 }
 
-resource "terraform_data" "eks_provisioner_linux" {
-  count = local.is_linux ? 1 : 0
+resource "terraform_data" "eks_provisioner" {
 
   # https://github.com/hashicorp/terraform/issues/23679
   # Destroy-time provisioners and their connection configurations may only reference attributes of the related resource, via 'self', 'count.index', or 'each.key'.
   triggers_replace = {
+    is_linux = local.is_linux
+    interpreter = local.is_linux ? [] : ["PowerShell", "-Command"]
     EKS_CLUSTER_NAME = aws_eks_cluster.eks.name
     ACCOUNT_ID = data.aws_caller_identity.current.account_id
     AWS_REGION = data.aws_region.current.name
@@ -284,21 +285,24 @@ resource "terraform_data" "eks_provisioner_linux" {
   }
 
   provisioner "local-exec" {
-    command = "scripts/linux/01-update-kubeconfig.sh"
+    command = self.triggers_replace.is_linux ? "scripts/linux/01-update-kubeconfig.sh" : "scripts\\windows\\01-update-kubeconfig.ps1"
     working_dir = path.module
+    interpreter = self.triggers_replace.interpreter
     environment = {
       EKS_CLUSTER_NAME = self.triggers_replace.EKS_CLUSTER_NAME
     }
   }
 
   provisioner "local-exec" {
-    command = "scripts/linux/02-patch-coredns-deployment.sh"
+    command = self.triggers_replace.is_linux ? "scripts/linux/02-patch-coredns-deployment.sh" : "scripts\\windows\\02-patch-coredns-deployment.ps1"
     working_dir = path.module
+    interpreter = self.triggers_replace.interpreter
   }
 
   provisioner "local-exec" {
-    command = "scripts/linux/03-lb-controller.sh"
+    command = self.triggers_replace.is_linux ? "scripts/linux/03-lb-controller.sh" : "scripts\\windows\\03-lb-controller.ps1"
     working_dir = path.module
+    interpreter = self.triggers_replace.interpreter
     environment = {
       EKS_CLUSTER_NAME = self.triggers_replace.EKS_CLUSTER_NAME
       ACCOUNT_ID = self.triggers_replace.ACCOUNT_ID
@@ -311,66 +315,9 @@ resource "terraform_data" "eks_provisioner_linux" {
 
   provisioner "local-exec" {
     when = destroy
-    command = "scripts/linux/03-lb-controller-destroy.sh"
+    command = self.triggers_replace.is_linux ? "scripts/linux/93-lb-controller-destroy.sh" : "scripts\\windows\\93-lb-controller-destroy.ps1"
     working_dir = path.module
-    environment = {
-      EKS_CLUSTER_NAME = self.triggers_replace.EKS_CLUSTER_NAME
-    }
-  }
-
-  depends_on = [
-    aws_eks_cluster.eks,
-    aws_eks_fargate_profile.kube_system,
-    aws_eks_fargate_profile.default
-  ]
-}
-
-resource "terraform_data" "eks_provisioner_windows" {
-  count = local.is_linux ? 0 : 1
-
-  # https://github.com/hashicorp/terraform/issues/23679
-  # Destroy-time provisioners and their connection configurations may only reference attributes of the related resource, via 'self', 'count.index', or 'each.key'.
-  triggers_replace = {
-    EKS_CLUSTER_NAME = aws_eks_cluster.eks.name
-    ACCOUNT_ID = data.aws_caller_identity.current.account_id
-    AWS_REGION = data.aws_region.current.name
-    VPC_ID = var.vpc_id
-  }
-
-  provisioner "local-exec" {
-    command = "scripts\\windows\\01-update-kubeconfig.ps1"
-    working_dir = path.module
-    interpreter = ["PowerShell", "-Command"]
-    environment = {
-      EKS_CLUSTER_NAME = self.triggers_replace.EKS_CLUSTER_NAME
-    }
-  }
-
-  provisioner "local-exec" {
-    command = "scripts\\windows\\02-patch-coredns-deployment.ps1"
-    working_dir = path.module
-    interpreter = ["PowerShell", "-Command"]
-  }
-
-  provisioner "local-exec" {
-    command = "scripts\\windows\\03-lb-controller.ps1"
-    working_dir = path.module
-    interpreter = ["PowerShell", "-Command"]
-    environment = {
-      EKS_CLUSTER_NAME = self.triggers_replace.EKS_CLUSTER_NAME
-      ACCOUNT_ID = self.triggers_replace.ACCOUNT_ID
-      AWS_REGION = self.triggers_replace.AWS_REGION
-      VPC_ID = self.triggers_replace.VPC_ID
-    }
-  }
-
-  # destroy
-
-  provisioner "local-exec" {
-    when = destroy
-    command = "scripts\\windows\\93-lb-controller-destroy.ps1"
-    working_dir = path.module
-    interpreter = ["PowerShell", "-Command"]
+    interpreter = self.triggers_replace.interpreter
     environment = {
       EKS_CLUSTER_NAME = self.triggers_replace.EKS_CLUSTER_NAME
     }
