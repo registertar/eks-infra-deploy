@@ -274,11 +274,20 @@ locals {
 resource "terraform_data" "eks_provisioner_linux" {
   count = local.is_linux ? 1 : 0
 
+  # https://github.com/hashicorp/terraform/issues/23679
+  # Destroy-time provisioners and their connection configurations may only reference attributes of the related resource, via 'self', 'count.index', or 'each.key'.
+  triggers_replace = {
+    EKS_CLUSTER_NAME = aws_eks_cluster.eks.name
+    ACCOUNT_ID = data.aws_caller_identity.current.account_id
+    AWS_REGION = data.aws_region.current.name
+    VPC_ID = var.vpc_id
+  }
+
   provisioner "local-exec" {
     command = "scripts/linux/01-update-kubeconfig.sh"
     working_dir = path.module
     environment = {
-      EKS_CLUSTER_NAME = aws_eks_cluster.eks.name
+      EKS_CLUSTER_NAME = self.triggers_replace.EKS_CLUSTER_NAME
     }
   }
 
@@ -291,10 +300,21 @@ resource "terraform_data" "eks_provisioner_linux" {
     command = "scripts/linux/03-lb-controller.sh"
     working_dir = path.module
     environment = {
-      EKS_CLUSTER_NAME = aws_eks_cluster.eks.name
-      ACCOUNT_ID = data.aws_caller_identity.current.account_id
-      AWS_REGION = data.aws_region.current.name
-      VPC_ID = var.vpc_id
+      EKS_CLUSTER_NAME = self.triggers_replace.EKS_CLUSTER_NAME
+      ACCOUNT_ID = self.triggers_replace.ACCOUNT_ID
+      AWS_REGION = self.triggers_replace.AWS_REGION
+      VPC_ID = self.triggers_replace.VPC_ID
+    }
+  }
+
+  # destroy
+
+  provisioner "local-exec" {
+    when = destroy
+    command = "scripts/linux/03-lb-controller-destroy.sh"
+    working_dir = path.module
+    environment = {
+      EKS_CLUSTER_NAME = self.triggers_replace.EKS_CLUSTER_NAME
     }
   }
 
@@ -308,12 +328,21 @@ resource "terraform_data" "eks_provisioner_linux" {
 resource "terraform_data" "eks_provisioner_windows" {
   count = local.is_linux ? 0 : 1
 
+  # https://github.com/hashicorp/terraform/issues/23679
+  # Destroy-time provisioners and their connection configurations may only reference attributes of the related resource, via 'self', 'count.index', or 'each.key'.
+  triggers_replace = {
+    EKS_CLUSTER_NAME = aws_eks_cluster.eks.name
+    ACCOUNT_ID = data.aws_caller_identity.current.account_id
+    AWS_REGION = data.aws_region.current.name
+    VPC_ID = var.vpc_id
+  }
+
   provisioner "local-exec" {
     command = "scripts\\windows\\01-update-kubeconfig.ps1"
     working_dir = path.module
     interpreter = ["PowerShell", "-Command"]
     environment = {
-      EKS_CLUSTER_NAME = aws_eks_cluster.eks.name
+      EKS_CLUSTER_NAME = self.triggers_replace.EKS_CLUSTER_NAME
     }
   }
 
@@ -328,10 +357,22 @@ resource "terraform_data" "eks_provisioner_windows" {
     working_dir = path.module
     interpreter = ["PowerShell", "-Command"]
     environment = {
-      EKS_CLUSTER_NAME = aws_eks_cluster.eks.name
-      ACCOUNT_ID = data.aws_caller_identity.current.account_id
-      AWS_REGION = data.aws_region.current.name
-      VPC_ID = var.vpc_id
+      EKS_CLUSTER_NAME = self.triggers_replace.EKS_CLUSTER_NAME
+      ACCOUNT_ID = self.triggers_replace.ACCOUNT_ID
+      AWS_REGION = self.triggers_replace.AWS_REGION
+      VPC_ID = self.triggers_replace.VPC_ID
+    }
+  }
+
+  # destroy
+
+  provisioner "local-exec" {
+    when = destroy
+    command = "scripts\\windows\\93-lb-controller-destroy.ps1"
+    working_dir = path.module
+    interpreter = ["PowerShell", "-Command"]
+    environment = {
+      EKS_CLUSTER_NAME = self.triggers_replace.EKS_CLUSTER_NAME
     }
   }
 
