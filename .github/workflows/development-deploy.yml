@@ -101,7 +101,7 @@ jobs:
     # On push to "main" :: Deploy eksctl for use from within Terraform local-exec provisioiner
     - name: Setup eksctl
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      run: curl -s --location "https://github.com/weaveworks/eksctl/releases/download/latest_release/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp && mv /tmp/eksctl /usr/local/bin
+      run: curl -s --location "https://github.com/eksctl-io/eksctl/releases/download/latest_release/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp && mv /tmp/eksctl /usr/local/bin
 
     # On push to "main" :: Build or change infrastructure according to Terraform configuration files
     - name: Terraform Apply
