@@ -42,12 +42,13 @@
 #       with:
 #         cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-name: 'Terraform'
+name: 'development-deploy'
 
 on:
   push:
     branches: [ "main" ]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -62,6 +63,7 @@ jobs:
     defaults:
       run:
         shell: bash
+        working-directory: ./environments/development
 
     steps:
     # Checkout the repository to the GitHub Actions runner
@@ -73,6 +75,14 @@ jobs:
       uses: hashicorp/setup-terraform@v2
     #  with:
     #    cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+    # Configure AWS credentials for terraforming and executing local-exec
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ vars.AWS_REGION }}
 
     # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
     - name: Terraform Init
@@ -86,8 +96,8 @@ jobs:
     - name: Terraform Plan
       run: terraform plan -input=false
 
-      # On push to "main", build or change infrastructure according to Terraform configuration files
-      # Note: It is recommended to set up a required "strict" status check in your repository for "Terraform Cloud". See the documentation on "strict" required status checks for more information: https://help.github.com/en/github/administering-a-repository/types-of-required-status-checks
+    # On push to "main", build or change infrastructure according to Terraform configuration files
+    # Note: It is recommended to set up a required "strict" status check in your repository for "Terraform Cloud". See the documentation on "strict" required status checks for more information: https://help.github.com/en/github/administering-a-repository/types-of-required-status-checks
     - name: Terraform Apply
       if: github.ref == 'refs/heads/"main"' && github.event_name == 'push'
       run: terraform apply -auto-approve -input=false

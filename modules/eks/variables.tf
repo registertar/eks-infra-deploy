@@ -14,12 +14,12 @@ variable "vpc_id" {
 
 variable "public_subnet_ids" {
   description = "The public subnet ids"
-  type        = list
+  type        = list(any)
 }
 
 variable "private_subnet_ids" {
   description = "The private subnet ids"
-  type        = list
+  type        = list(any)
 }
 
 variable "desired_size" {
@@ -41,7 +41,7 @@ variable "min_size" {
 
 variable "security_group_ids" {
   description = "The security groups to access EKS"
-  type        = list
+  type        = list(any)
   default     = []
 }
 

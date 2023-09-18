@@ -12,7 +12,7 @@ data "aws_region" "current" {}
 resource "aws_kms_key" "master_cmk" {
   description             = "Master KMS key"
   deletion_window_in_days = 7
-  tags = local.tags
+  tags                    = local.tags
 }
 
 resource "aws_kms_alias" "master_cmk" {

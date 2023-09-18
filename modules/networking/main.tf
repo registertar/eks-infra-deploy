@@ -4,7 +4,7 @@ resource "aws_vpc" "vpc" {
   enable_dns_hostnames = true
   enable_dns_support   = true
 
-  tags = merge( {
+  tags = merge({
     Name = var.name
   }, var.tags)
 }
@@ -13,7 +13,7 @@ resource "aws_vpc" "vpc" {
 # Internet Gateway for Public Subnet
 resource "aws_internet_gateway" "internet_gateway" {
   vpc_id = aws_vpc.vpc.id
-  tags   = merge({
+  tags = merge({
     Name = "${var.name} Internet Gateway"
   }, var.tags)
 }
@@ -41,9 +41,9 @@ resource "aws_subnet" "public_subnet" {
   cidr_block              = element(var.public_subnets_cidr_block, count.index)
   availability_zone       = element(var.availability_zones, count.index)
   map_public_ip_on_launch = true
-  tags                    = merge( {
-    Name = "${var.name} Public Subnet ${element(var.availability_zones, count.index)}"
-    "kubernetes.io/role/elb" = 1
+  tags = merge({
+    Name                                    = "${var.name} Public Subnet ${element(var.availability_zones, count.index)}"
+    "kubernetes.io/role/elb"                = 1
     "kubernetes.io/cluster/${var.eks_name}" = "shared"
   }, var.tags)
 }
@@ -55,9 +55,9 @@ resource "aws_subnet" "private_subnet" {
   cidr_block              = element(var.private_subnets_cidr_block, count.index)
   availability_zone       = element(var.availability_zones, count.index)
   map_public_ip_on_launch = false
-  tags                    = merge({
-    Name = "${var.name} Private Subnet ${element(var.availability_zones, count.index)}"
-    "kubernetes.io/role/internal-elb" = 1
+  tags = merge({
+    Name                                    = "${var.name} Private Subnet ${element(var.availability_zones, count.index)}"
+    "kubernetes.io/role/internal-elb"       = 1
     "kubernetes.io/cluster/${var.eks_name}" = "shared"
   }, var.tags)
 }
@@ -114,7 +114,7 @@ resource "aws_security_group" "security_group" {
   name        = "${var.name} Security Group"
   description = "Default SG to allow traffic from the VPC"
   vpc_id      = aws_vpc.vpc.id
-  depends_on  = [
+  depends_on = [
     aws_vpc.vpc
   ]
 
