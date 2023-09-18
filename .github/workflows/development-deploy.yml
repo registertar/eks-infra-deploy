@@ -96,8 +96,14 @@ jobs:
     - name: Terraform Plan
       run: terraform plan -input=false
 
-    # On push to "main", build or change infrastructure according to Terraform configuration files
-    # Note: It is recommended to set up a required "strict" status check in your repository for "Terraform Cloud". See the documentation on "strict" required status checks for more information: https://help.github.com/en/github/administering-a-repository/types-of-required-status-checks
+    ##
+
+    # On push to "main" :: Deploy eksctl for use from within Terraform local-exec provisioiner
+    - name: Setup eksctl
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: curl -s --location "https://github.com/weaveworks/eksctl/releases/download/latest_release/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp && mv /tmp/eksctl /usr/local/bin
+
+    # On push to "main" :: Build or change infrastructure according to Terraform configuration files
     - name: Terraform Apply
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       run: terraform apply -auto-approve -input=false

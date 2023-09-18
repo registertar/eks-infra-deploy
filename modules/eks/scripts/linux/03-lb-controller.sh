@@ -1,7 +1,7 @@
 # ref: https://archive.eksworkshop.com/beginner/180_fargate/prerequisites-for-alb/
 # ref: https://dev.to/aws-builders/deploying-simple-application-to-eks-on-fargate-5ee2
 
-$LBC_VERSION = "v2.5.4"
+LBC_VERSION="v2.5.4"
 
 eksctl utils associate-iam-oidc-provider --cluster ${EKS_CLUSTER_NAME} --approve
 
