@@ -1,7 +1,7 @@
 
 # Define the role to be attached EKS
 resource "aws_iam_role" "eks_role" {
-  name               = "${var.name}-role"
+  name = "${var.name}-role"
   assume_role_policy = jsonencode({
     "Version" : "2012-10-17",
     "Statement" : [
@@ -82,7 +82,7 @@ resource "aws_eks_cluster" "eks" {
   vpc_config {
     endpoint_private_access = true
     endpoint_public_access  = true
-    public_access_cidrs     = [
+    public_access_cidrs = [
       "0.0.0.0/0",
     ]
     security_group_ids = [
@@ -113,12 +113,12 @@ resource "aws_iam_role" "node_group_role" {
   path                  = "/"
   force_detach_policies = false
   max_session_duration  = 3600
-  assume_role_policy    = jsonencode(
+  assume_role_policy = jsonencode(
     {
       Statement = [
         {
-          Action    = "sts:AssumeRole"
-          Effect    = "Allow"
+          Action = "sts:AssumeRole"
+          Effect = "Allow"
           Principal = {
             Service = "ec2.amazonaws.com"
           }
@@ -195,7 +195,7 @@ resource "aws_eks_fargate_profile" "kube_system" {
   ]
 
   tags = merge({
-    "eks/cluster-name"   = aws_eks_cluster.eks.name
+    "eks/cluster-name" = aws_eks_cluster.eks.name
   }, var.tags)
 }
 
@@ -217,7 +217,7 @@ resource "aws_eks_fargate_profile" "default" {
   ]
 
   tags = merge({
-    "eks/cluster-name"   = aws_eks_cluster.eks.name
+    "eks/cluster-name" = aws_eks_cluster.eks.name
   }, var.tags)
 }
 
@@ -276,16 +276,16 @@ resource "terraform_data" "eks_provisioner" {
   # https://github.com/hashicorp/terraform/issues/23679
   # Destroy-time provisioners and their connection configurations may only reference attributes of the related resource, via 'self', 'count.index', or 'each.key'.
   triggers_replace = {
-    is_linux = local.is_linux
-    interpreter = local.is_linux ? [] : ["PowerShell", "-Command"]
+    is_linux         = local.is_linux
+    interpreter      = local.is_linux ? [] : ["PowerShell", "-Command"]
     EKS_CLUSTER_NAME = aws_eks_cluster.eks.name
-    ACCOUNT_ID = data.aws_caller_identity.current.account_id
-    AWS_REGION = data.aws_region.current.name
-    VPC_ID = var.vpc_id
+    ACCOUNT_ID       = data.aws_caller_identity.current.account_id
+    AWS_REGION       = data.aws_region.current.name
+    VPC_ID           = var.vpc_id
   }
 
   provisioner "local-exec" {
-    command = self.triggers_replace.is_linux ? "scripts/linux/01-update-kubeconfig.sh" : "scripts\\windows\\01-update-kubeconfig.ps1"
+    command     = self.triggers_replace.is_linux ? "scripts/linux/01-update-kubeconfig.sh" : "scripts\\windows\\01-update-kubeconfig.ps1"
     working_dir = path.module
     interpreter = self.triggers_replace.interpreter
     environment = {
@@ -294,28 +294,28 @@ resource "terraform_data" "eks_provisioner" {
   }
 
   provisioner "local-exec" {
-    command = self.triggers_replace.is_linux ? "scripts/linux/02-patch-coredns-deployment.sh" : "scripts\\windows\\02-patch-coredns-deployment.ps1"
+    command     = self.triggers_replace.is_linux ? "scripts/linux/02-patch-coredns-deployment.sh" : "scripts\\windows\\02-patch-coredns-deployment.ps1"
     working_dir = path.module
     interpreter = self.triggers_replace.interpreter
   }
 
   provisioner "local-exec" {
-    command = self.triggers_replace.is_linux ? "scripts/linux/03-lb-controller.sh" : "scripts\\windows\\03-lb-controller.ps1"
+    command     = self.triggers_replace.is_linux ? "scripts/linux/03-lb-controller.sh" : "scripts\\windows\\03-lb-controller.ps1"
     working_dir = path.module
     interpreter = self.triggers_replace.interpreter
     environment = {
       EKS_CLUSTER_NAME = self.triggers_replace.EKS_CLUSTER_NAME
-      ACCOUNT_ID = self.triggers_replace.ACCOUNT_ID
-      AWS_REGION = self.triggers_replace.AWS_REGION
-      VPC_ID = self.triggers_replace.VPC_ID
+      ACCOUNT_ID       = self.triggers_replace.ACCOUNT_ID
+      AWS_REGION       = self.triggers_replace.AWS_REGION
+      VPC_ID           = self.triggers_replace.VPC_ID
     }
   }
 
   # destroy
 
   provisioner "local-exec" {
-    when = destroy
-    command = self.triggers_replace.is_linux ? "scripts/linux/93-lb-controller-destroy.sh" : "scripts\\windows\\93-lb-controller-destroy.ps1"
+    when        = destroy
+    command     = self.triggers_replace.is_linux ? "scripts/linux/93-lb-controller-destroy.sh" : "scripts\\windows\\93-lb-controller-destroy.ps1"
     working_dir = path.module
     interpreter = self.triggers_replace.interpreter
     environment = {
