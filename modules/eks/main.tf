@@ -277,7 +277,7 @@ resource "terraform_data" "eks_provisioner" {
   # Destroy-time provisioners and their connection configurations may only reference attributes of the related resource, via 'self', 'count.index', or 'each.key'.
   triggers_replace = {
     is_linux         = local.is_linux
-    interpreter      = local.is_linux ? [] : ["PowerShell", "-Command"]
+    interpreter      = local.is_linux ? ["bash"] : ["PowerShell", "-Command"]
     EKS_CLUSTER_NAME = aws_eks_cluster.eks.name
     ACCOUNT_ID       = data.aws_caller_identity.current.account_id
     AWS_REGION       = data.aws_region.current.name
