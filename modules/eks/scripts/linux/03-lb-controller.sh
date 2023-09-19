@@ -37,6 +37,7 @@ helm upgrade -i aws-load-balancer-controller \
     --set image.tag="${LBC_VERSION}" \
     --set region=${AWS_REGION} \
     --set vpcId=${VPC_ID} \
-    --wait
+    --wait \
+    --timeout=30m
 
 kubectl -n kube-system rollout status deployment aws-load-balancer-controller
