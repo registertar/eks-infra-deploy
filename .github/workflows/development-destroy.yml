@@ -85,6 +85,10 @@ jobs:
     - name: Terraform Init
       run: terraform init
 
+    # Deploy eksctl for use from within Terraform local-exec provisioiner
+    - name: Setup eksctl
+      run: curl -s --location "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_Linux_amd64.tar.gz" | tar xz -C /tmp && mv /tmp/eksctl /usr/local/bin
+
     # Destroy the environment for clean-up purposes
     - name: Terraform Destroy
       run: terraform destroy -auto-approve -input=false

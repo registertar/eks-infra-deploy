@@ -1,1 +1,1 @@
-helm install workshop ./helm/ --wait
+helm upgrade -i workshop ./helm/ --wait
